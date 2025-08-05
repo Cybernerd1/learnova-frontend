@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-    baseURL: 'https://classroom-backend-2v40.onrender.com',
+    baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api',
     withCredentials: true,
 })
 
