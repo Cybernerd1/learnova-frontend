@@ -1,16 +1,16 @@
 import React from 'react'
 import { useState } from "react";
 import AuthModal from '../auth/AuthModal';
-import {assets} from '../../assets/assets.js'
-
+import { assets } from '../../assets/assets.js'
+import { ArrowRight } from 'lucide-react';
 
 
 const HomeNav = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
-   
+
     return (
         <>
-            <div className="flex flex-row items-center justify-between max-w-full w-full h-20 fixed p-16 top-0 bg-white text-[#333333]">
+            <div className="flex flex-row items-center justify-between max-w-full w-full h-16 fixed p-10 top-0 bg-white/90 text-[#333333]">
                 <div className='flex p-4 m-4'>
                     <img src={assets.learnovalogo} alt="Learnova Logo" className="h-20" />
                 </div>
@@ -21,7 +21,7 @@ const HomeNav = () => {
                     <a href="#Contact" className="hover:text-gray-300">Contact Us</a>
                 </div>
                 <div>
-                    <button style={{padding: '12px 32px', margin:"40px"}} className='border-2 border-[#333] rounded-full px-6 py-2 text-2xl' onClick={() => setIsModalOpen(true)}>
+                    <button className='border-2 flex flex-row  border-[#333] rounded-full px-6 py-2 m-4 text-2xl' onClick={() => setIsModalOpen(true)}>
                         Get Started
                     </button>
                 </div>
