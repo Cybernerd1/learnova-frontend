@@ -39,7 +39,7 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
+  // const [successMessage, setSuccessMessage] = useState("");
   const [errors, setErrors] = useState({});
   const [verifyType, setVerifyType] = useState("signup"); // 'signup', 'login', 'reset'
   const [needsVerification, setNeedsVerification] = useState(false);
@@ -105,7 +105,7 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
   // Handle auth (login/signup)
   async function handleAuth(e) {
     e?.preventDefault();
-    
+
     if (isLogin) {
       if (loginMethod === "otp") {
         return handleSendLoginOtp();
@@ -136,7 +136,7 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
           toast.info("Please verify your email first. We're sending you a verification code...");
           setNeedsVerification(true);
           setVerifyType("signup");
-          
+
           // Automatically send verification OTP
           await handleAutoSendVerificationOtp();
           return;
@@ -146,9 +146,9 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
         if (token) {
           localStorage.setItem("token", token);
         }
-        
+
         toast.success(response.data.message || "Login successful!");
-        setSuccessMessage(response.data.message || "Login successful!");
+        // setSuccessMessage(response.data.message || "Login successful!");
 
         setTimeout(() => {
           onSuccess(response.data);
@@ -160,18 +160,18 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
       }
     } catch (err) {
       const errorMessage = err.response?.data?.message || err.message || "Login failed. Please try again.";
-      
+
       // Check if error is due to unverified account
       if (errorMessage.toLowerCase().includes("verify") || errorMessage.toLowerCase().includes("verification") || errorMessage.toLowerCase().includes("not verified")) {
         toast.info("Please verify your email first. We're sending you a verification code...");
         setNeedsVerification(true);
         setVerifyType("signup");
-        
+
         // Automatically send verification OTP
         await handleAutoSendVerificationOtp();
         return;
       }
-      
+
       toast.error(errorMessage);
       setErrors({ general: errorMessage });
     } finally {
@@ -182,10 +182,10 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
   // Auto send verification OTP when email needs verification
   async function handleAutoSendVerificationOtp() {
     setIsAutoSendingOtp(true);
-    
+
     try {
       const response = await api.post("/api/auth/send-verify-otp", { email });
-      
+
       if (response.data.success) {
         toast.success("Verification code sent to your email!");
         setStep("verify");
@@ -259,7 +259,7 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
       if (response.data.success) {
         toast.success(response.data.message || "Account created! Sending verification code...");
         setVerifyType("signup");
-        
+
         // Automatically send verification OTP
         setTimeout(async () => {
           await handleAutoSendVerificationOtp();
@@ -279,8 +279,14 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
 
   // Google Auth
   function handleGoogleAuth() {
-    const baseUrl = import.meta.env.VITE_API_BASE_URL || window.location.origin;
-    window.location.href = `${baseUrl}/api/auth/google`;
+    try {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || window.location.origin;
+      window.location.href = `${baseUrl}/api/auth/google`;
+    } catch (error) {
+      console.error("Google Auth Error:", error);
+      toast.error("Google authentication is not implemented yet.");
+
+    }
   }
 
   // Verify OTP
@@ -458,7 +464,7 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
     setOtpValues(["", "", "", "", "", ""]);
     setNewPassword("");
     setErrors({});
-    setSuccessMessage("");
+    // setSuccessMessage("");
     setLoading(false);
     setStep("auth");
     setIsLogin(true);
@@ -476,7 +482,7 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
     setOtpValues(["", "", "", "", "", ""]);
     setNewPassword("");
     setErrors({});
-    setSuccessMessage("");
+    // setSuccessMessage("");
     setLoading(false);
     setVerifyType("signup");
     setNeedsVerification(false);
@@ -487,7 +493,7 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
   function toggleAuthMode() {
     setIsLogin(!isLogin);
     setErrors({});
-    setSuccessMessage("");
+    // setSuccessMessage("");
     setNeedsVerification(false);
     if (!isLogin) {
       // Switching to login, reset signup fields
@@ -499,10 +505,10 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
   // Handle back navigation
   function handleBack() {
     setErrors({});
-    setSuccessMessage("");
+    // setSuccessMessage("");
     setOtpValues(["", "", "", "", "", ""]);
     setNeedsVerification(false);
-    
+
     if (step === "verify") {
       setStep("auth");
     } else if (step === "forgotPassword" || step === "resetPassword") {
@@ -538,8 +544,8 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
         theme="dark"
       />
 
-      <div className="fixed inset-0 bg-black/15 backdrop-blur-sm flex items-center justify-center z-50">
-        <div className="relative bg-white bg-opacity-10 backdrop-blur-2xl border border-white border-opacity-20 rounded-2xl shadow-2xl w-full max-w-5xl mx-4 flex overflow-hidden">
+      <div className="fixed inset-0 bg-black/15 backdrop-blur-sm flex items-center justify-center z-50 h-full w-full">
+        <div className="relative bg-white bg-opacity-10 backdrop-blur-2xl border border-white border-opacity-20 rounded-2xl shadow-2xl  max-w-3/5 mx-4 flex overflow-hidden">
           {/* Close */}
           <button
             type="button"
@@ -550,17 +556,17 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
           </button>
 
           {/* Carousel */}
-          <div className="w-1/2 relative overflow-hidden h-full">
+          <div className="w-auto relative overflow-hidden max-h-3/6">
             <div
               className="flex transition-transform duration-1000 ease-in-out h-full"
               style={{ transform: `translateX(-${index * 100}%)` }}
             >
               {slides.map((slide, i) => (
-                <div key={i} className="relative w-full h-full flex-shrink-0">
+                <div key={i} className="relative flex-shrink-0">
                   <img
                     src={slide.url}
                     alt={`Slide ${i}`}
-                    className="w-full h-full object-cover"
+                    className="h-fit w-fit object-cover"
                   />
                   <div className="absolute inset-0 bg-black/0 flex flex-col justify-start py-10 items-start px-10 text-[#2E2E2E]">
                     <h2 className="text-3xl font-bold mb-2">{slide.title}</h2>
@@ -574,7 +580,7 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
 
           {/* Auth Form */}
           <div className="w-full md:w-1/2 p-8 flex flex-col justify-center text-white bg-gray-900 bg-opacity-80">
-            <div className="w-full max-w-sm mx-auto">
+            <div className="w-full min-w-3/6 max-w-sm mx-auto">
 
               {/* Loading indicator for auto-sending OTP */}
               {isAutoSendingOtp && (
@@ -634,7 +640,7 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
                             className="w-full pl-10 pr-4 py-3 bg-gray-800 bg-opacity-50 text-white border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
                           />
                         </div>
-                        {errors.name && <p className="text-red-400 text-xs mt-1">{errors.name}</p>}
+                        {/* {errors.name && <p className="text-red-400 text-xs mt-1">{errors.name}</p>} */}
                       </div>
                     )}
 
@@ -712,10 +718,10 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
                       className="w-full bg-blue-600 hover:bg-blue-700 py-3 rounded-lg font-medium transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed"
                       disabled={loading || isAutoSendingOtp}
                     >
-                      {loading 
-                        ? "Please wait..." 
-                        : isLogin 
-                          ? (loginMethod === "password" ? "Login" : "Send OTP") 
+                      {loading
+                        ? "Please wait..."
+                        : isLogin
+                          ? (loginMethod === "password" ? "Login" : "Send OTP")
                           : "Create Account"
                       }
                     </button>
