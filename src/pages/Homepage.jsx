@@ -1,7 +1,7 @@
 import React from 'react'
-import HomeNav from '@/components/page/HomeNav'
+import HomeNav from '@/components/shared/HomeNav.jsx'
 import { assets } from './../assets/assets.js'
-import Footer from '@/components/page/Footer.jsx'
+import Footer from '@/components/shared/Footer.jsx'
 import { useState } from "react";
 import AuthModal from '../components/auth/AuthModal.jsx';
 import LearnOvaFeatures from '../components/Homepage/LearnOvaFeatures.jsx';
@@ -15,11 +15,8 @@ const Homepage = () => {
     return (
         <>
             <HomeNav />
-
-
             <LearnOvaHero />
             <AuthModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
-
             <LearnOvaFeatures />
             <LearnOvaFAQs />
             <Footer />

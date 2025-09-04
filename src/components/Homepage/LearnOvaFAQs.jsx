@@ -41,7 +41,7 @@ export default function LearnOvaFAQs() {
                         {/* Expand/Collapse All Button */}
                         <div className="flex justify-end mb-6">
                             <button
-                                className="text-sm text-gray-600 hover:text-gray-900 underline transition-colors duration-200"
+                                className="text-sm text-gray-600 hover:text-gray-900 underline transition-colors duration-200 hover:cursor-pointer"
                                 onClick={toggleAll}
                             >
                                 {openIndex === "all" ? "Collapse all" : "Expand all"}
@@ -51,7 +51,7 @@ export default function LearnOvaFAQs() {
                         {/* FAQ Items */}
                         <div className="space-y-0">
                             {faqs.map((faq, index) => (
-                                <div key={index} className="border-b border-gray-200">
+                                <div key={index} className="border-b border-gray-200 ">
                                     <button
                                         onClick={() => {
                                             if (openIndex === "all") {
@@ -62,19 +62,18 @@ export default function LearnOvaFAQs() {
                                         }}
                                         className="flex items-start justify-between w-full text-left py-6 hover:bg-gray-50/50 transition-colors duration-200 group"
                                     >
-                                        <span className="text-lg md:text-xl font-medium text-gray-900 pr-4 group-hover:text-blue-600 transition-colors duration-200">
+                                        <span className="hover:cursor-pointer text-lg md:text-xl font-medium text-gray-900 pr-4 group-hover:text-gray-600 transition-colors duration-200">
                                             {faq.question}
                                         </span>
                                         <div className="flex-shrink-0 mt-1">
                                             {openIndex === index || openIndex === "all" ? (
-                                                <Minus className="w-5 h-5 text-gray-500 group-hover:text-blue-600 transition-colors duration-200" />
+                                                <Minus className="hover:cursor-pointer w-5 h-5 text-gray-500 group-hover:text-gray-600 transition-colors duration-200" />
                                             ) : (
-                                                <Plus className="w-5 h-5 text-gray-500 group-hover:text-blue-600 transition-colors duration-200" />
+                                                <Plus className="w-5 h-5 text-gray-500 group-hover:text-gray-600 transition-colors duration-200" />
                                             )}
                                         </div>
                                     </button>
 
-                                    {/* Answer with smooth animation */}
                                     <div className={`overflow-hidden transition-all duration-300 ease-in-out ${openIndex === index || openIndex === "all"
                                             ? 'max-h-96 opacity-100'
                                             : 'max-h-0 opacity-0'

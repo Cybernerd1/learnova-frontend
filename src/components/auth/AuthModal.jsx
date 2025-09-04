@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { assets } from "../../assets/assets.js";
 import api from "../../services/api.js";
-import { z } from "zod";
-import { User, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { User, Mail, Lock, Eye, EyeOff, X } from "lucide-react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -12,13 +11,23 @@ const slides = [
   { url: assets.auth3, title: "Achieve More", subtitle: "Track your progress and reach your learning goals", description: "Set goals, monitor progress, and celebrate achievements with our analytics." },
 ];
 
-const emailSchema = z.string().email("Invalid email address");
-const passwordSchema = z.string()
-  .min(8, "Password must be at least 8 characters")
-  .regex(/[A-Z]/, "Password must contain an uppercase letter")
-  .regex(/[a-z]/, "Password must contain a lowercase letter")
-  .regex(/\d/, "Password must contain a number")
-  .regex(/[!@#$%^&*(),.?":{}|<>]/, "Password must contain a special character");
+const emailSchema = {
+  safeParse: (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return { success: emailRegex.test(email), error: { issues: [{ message: "Invalid email address" }] } };
+  }
+};
+
+const passwordSchema = {
+  safeParse: (password) => {
+    if (password.length < 8) return { success: false, error: { issues: [{ message: "Password must be at least 8 characters" }] } };
+    if (!/[A-Z]/.test(password)) return { success: false, error: { issues: [{ message: "Password must contain an uppercase letter" }] } };
+    if (!/[a-z]/.test(password)) return { success: false, error: { issues: [{ message: "Password must contain a lowercase letter" }] } };
+    if (!/\d/.test(password)) return { success: false, error: { issues: [{ message: "Password must contain a number" }] } };
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) return { success: false, error: { issues: [{ message: "Password must contain a special character" }] } };
+    return { success: true };
+  }
+};
 
 export default function AuthModal({ isOpen = true, onClose = () => { }, onSuccess = () => { } }) {
   const [index, setIndex] = useState(0);
@@ -39,7 +48,6 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  // const [successMessage, setSuccessMessage] = useState("");
   const [errors, setErrors] = useState({});
   const [verifyType, setVerifyType] = useState("signup"); // 'signup', 'login', 'reset'
   const [needsVerification, setNeedsVerification] = useState(false);
@@ -59,7 +67,9 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
     if (!isOpen) {
       resetForm();
       setIndex(0);
-      clearInterval(timeoutRef.current);
+      if (timeoutRef.current) {
+        clearInterval(timeoutRef.current);
+      }
     }
   }, [isOpen]);
 
@@ -95,6 +105,15 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
     if (formType === "login" && loginMethod === "password") {
       if (!password) {
         newErrors.password = "Password is required";
+      }
+    }
+
+    if (formType === "reset") {
+      if (!newPassword) {
+        newErrors.newPassword = "New password is required";
+      } else {
+        const passwordResult = passwordSchema.safeParse(newPassword);
+        if (!passwordResult.success) newErrors.newPassword = passwordResult.error.issues[0]?.message;
       }
     }
 
@@ -148,7 +167,6 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
         }
 
         toast.success(response.data.message || "Login successful!");
-        // setSuccessMessage(response.data.message || "Login successful!");
 
         setTimeout(() => {
           onSuccess(response.data);
@@ -285,7 +303,6 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
     } catch (error) {
       console.error("Google Auth Error:", error);
       toast.error("Google authentication is not implemented yet.");
-
     }
   }
 
@@ -317,6 +334,7 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
           response = await api.post(endpoint, { email, otp });
           break;
         case "reset":
+          if (!validateForm("reset")) return;
           endpoint = "/api/auth/reset-password";
           response = await api.post(endpoint, { email, otp, newPassword });
           break;
@@ -417,7 +435,7 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
 
     if (value && idx < 5) {
       const nextField = document.querySelector(`input[name="otp-${idx + 1}"]`);
-      nextField && nextField.focus();
+      nextField?.focus();
     }
   }
 
@@ -464,7 +482,6 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
     setOtpValues(["", "", "", "", "", ""]);
     setNewPassword("");
     setErrors({});
-    // setSuccessMessage("");
     setLoading(false);
     setStep("auth");
     setIsLogin(true);
@@ -482,7 +499,6 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
     setOtpValues(["", "", "", "", "", ""]);
     setNewPassword("");
     setErrors({});
-    // setSuccessMessage("");
     setLoading(false);
     setVerifyType("signup");
     setNeedsVerification(false);
@@ -493,7 +509,6 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
   function toggleAuthMode() {
     setIsLogin(!isLogin);
     setErrors({});
-    // setSuccessMessage("");
     setNeedsVerification(false);
     if (!isLogin) {
       // Switching to login, reset signup fields
@@ -505,7 +520,6 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
   // Handle back navigation
   function handleBack() {
     setErrors({});
-    // setSuccessMessage("");
     setOtpValues(["", "", "", "", "", ""]);
     setNeedsVerification(false);
 
@@ -530,96 +544,108 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
   }
 
   return (
-    <>
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="dark"
-      />
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex">
 
-      <div className="fixed inset-0 bg-black/15 backdrop-blur-sm flex items-center justify-center z-50 h-full w-full">
-        <div className="relative bg-white bg-opacity-10 backdrop-blur-2xl border border-white border-opacity-20 rounded-2xl shadow-2xl  max-w-3/5 mx-4 flex overflow-hidden">
-          {/* Close */}
-          <button
-            type="button"
-            onClick={onClose}
-            className="absolute top-4 right-4 z-10 bg-white/50 bg-opacity-20 backdrop-blur-md w-8 h-8 rounded-full text-black text-sm hover:bg-opacity-30 flex items-center justify-center"
+        {/* Close Button */}
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute top-4 right-4 z-20 bg-black/20 hover:bg-black/30 backdrop-blur-sm w-10 h-10 rounded-full text-white text-lg transition-colors flex items-center justify-center"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        {/* Carousel Side */}
+        <div className="hidden lg:flex w-1/2 relative overflow-hidden">
+          <div
+            className="flex transition-transform duration-1000 ease-in-out h-full"
+            style={{ transform: `translateX(-${index * 100}%)` }}
           >
-            ✕
-          </button>
-
-          {/* Carousel */}
-          <div className="w-auto relative overflow-hidden max-h-3/6">
-            <div
-              className="flex transition-transform duration-1000 ease-in-out h-full"
-              style={{ transform: `translateX(-${index * 100}%)` }}
-            >
-              {slides.map((slide, i) => (
-                <div key={i} className="relative flex-shrink-0">
-                  <img
-                    src={slide.url}
-                    alt={`Slide ${i}`}
-                    className="h-fit w-fit object-cover"
-                  />
-                  <div className="absolute inset-0 bg-black/0 flex flex-col justify-start py-10 items-start px-10 text-[#2E2E2E]">
-                    <h2 className="text-3xl font-bold mb-2">{slide.title}</h2>
-                    <h4 className="text-xl mb-1">{slide.subtitle}</h4>
-                    <p className="text-sm max-w-md">{slide.description}</p>
-                  </div>
+            {slides.map((slide, i) => (
+              <div key={i} className="relative flex-shrink-0 w-full h-full">
+                <img
+                  src={slide.url}
+                  alt={`Slide ${i + 1}`}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/20 to-transparent flex flex-col justify-end p-8 text-white">
+                  <h2 className="text-3xl font-bold mb-2">{slide.title}</h2>
+                  <h4 className="text-xl mb-2 opacity-90">{slide.subtitle}</h4>
+                  <p className="text-base opacity-80 max-w-md leading-relaxed">{slide.description}</p>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
 
-          {/* Auth Form */}
-          <div className="w-full md:w-1/2 p-8 flex flex-col justify-center text-white bg-gray-900 bg-opacity-80">
-            <div className="w-full min-w-3/6 max-w-sm mx-auto">
+          {/* Carousel dots */}
+          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
+            {slides.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setIndex(i)}
+                className={`w-3 h-3 rounded-full transition-colors ${i === index ? "bg-white" : "bg-white/50"
+                  }`}
+              />
+            ))}
+          </div>
+        </div>
 
-              {/* Loading indicator for auto-sending OTP */}
-              {isAutoSendingOtp && (
-                <div className="mb-4 text-center text-blue-400 font-medium">
-                  <div className="flex items-center justify-center gap-2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-400"></div>
-                    Sending verification code...
-                  </div>
-                </div>
-              )}
+        {/* Form Side */}
+        <div className="flex-1 lg:max-w-md bg-gray-900 text-white overflow-y-auto">
+          <div className="p-6 lg:p-8 h-full flex flex-col justify-center min-h-[600px]">
 
-              {/* Error Messages */}
-              {errors.general && (
-                <div className="mb-4 text-center text-red-400 font-medium">
-                  {errors.general}
+            {/* Loading indicator for auto-sending OTP */}
+            {isAutoSendingOtp && (
+              <div className="mb-4 text-center text-blue-400">
+                <div className="flex items-center justify-center gap-2 bg-blue-500/10 p-4 rounded-lg">
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-400 border-t-transparent"></div>
+                  <span className="text-sm font-medium">Sending verification code...</span>
                 </div>
-              )}
+              </div>
+            )}
+
+            {/* Error Messages */}
+            {errors.general && (
+              <div className="mb-4 text-center text-red-400 bg-red-500/10 p-4 rounded-lg border border-red-500/20">
+                <span className="text-sm font-medium">{errors.general}</span>
+              </div>
+            )}
+
+            <div className="space-y-6">
 
               {/* LOGIN/SIGNUP */}
               {step === "auth" && (
-                <form onSubmit={handleAuth} autoComplete="off">
-                  <div className="relative flex w-full mb-6 items-center justify-center gap-3">
-                    <h1 className="text-4xl font-bold">{isLogin ? "Login" : "Sign up"}</h1>
+                <form onSubmit={handleAuth} autoComplete="off" className="space-y-6">
+                  <div className="text-center">
+                    <h1 className="text-3xl lg:text-4xl font-bold mb-2">
+                      {isLogin ? "Welcome Back" : "Get Started"}
+                    </h1>
+                    <p className="text-gray-400 text-sm">
+                      {isLogin ? "Sign in to your account" : "Create your account"}
+                    </p>
                   </div>
 
                   {/* Login Method Toggle (only for login) */}
                   {isLogin && (
-                    <div className="flex mb-4 bg-gray-800 bg-opacity-50 rounded-lg p-1">
+                    <div className="flex bg-gray-800 rounded-lg p-1 mb-4">
                       <button
                         type="button"
                         onClick={() => setLoginMethod("password")}
-                        className={`flex-1 py-2 px-4 text-sm rounded-md transition-colors ${loginMethod === "password" ? "bg-blue-600 text-white" : "text-gray-300 hover:text-white"}`}
+                        className={`flex-1 py-2.5 px-4 text-sm font-medium rounded-md transition-all ${loginMethod === "password"
+                          ? "bg-blue-600 text-white shadow-sm"
+                          : "text-gray-300 hover:text-white hover:bg-gray-700"
+                          }`}
                       >
                         Password
                       </button>
                       <button
                         type="button"
                         onClick={() => setLoginMethod("otp")}
-                        className={`flex-1 py-2 px-4 text-sm rounded-md transition-colors ${loginMethod === "otp" ? "bg-blue-600 text-white" : "text-gray-300 hover:text-white"}`}
+                        className={`flex-1 py-2.5 px-4 text-sm font-medium rounded-md transition-all ${loginMethod === "otp"
+                          ? "bg-blue-600 text-white shadow-sm"
+                          : "text-gray-300 hover:text-white hover:bg-gray-700"
+                          }`}
                       >
                         OTP
                       </button>
@@ -630,30 +656,32 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
                     {/* Name (only for signup) */}
                     {!isLogin && (
                       <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-1">Full Name</label>
                         <div className="relative">
-                          <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                          <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                           <input
                             type="text"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            placeholder="Enter your fullname"
-                            className="w-full pl-10 pr-4 py-3 bg-gray-800 bg-opacity-50 text-white border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
+                            placeholder="Enter your full name"
+                            className="w-full pl-11 pr-4 py-3 bg-gray-800 text-white border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500 focus:bg-gray-700 transition-colors"
                           />
                         </div>
-                        {/* {errors.name && <p className="text-red-400 text-xs mt-1">{errors.name}</p>} */}
+                        {errors.name && <p className="text-red-400 text-xs mt-1">{errors.name}</p>}
                       </div>
                     )}
 
                     {/* Email */}
                     <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">Email Address</label>
                       <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                         <input
                           type="email"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           placeholder="Enter your email"
-                          className="w-full pl-10 pr-4 py-3 bg-gray-800 bg-opacity-50 text-white border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
+                          className="w-full pl-11 pr-4 py-3 bg-gray-800 text-white border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500 focus:bg-gray-700 transition-colors"
                           autoComplete={isLogin ? "username" : "email"}
                         />
                       </div>
@@ -663,23 +691,24 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
                     {/* Password */}
                     {(!isLogin || (isLogin && loginMethod === "password")) && (
                       <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-1">Password</label>
                         <div className="relative">
-                          <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                          <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                           <input
                             type={showPassword ? "text" : "password"}
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             placeholder="Enter password"
-                            className="w-full pl-10 pr-12 py-3 bg-gray-800 bg-opacity-50 text-white border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
+                            className="w-full pl-11 pr-12 py-3 bg-gray-800 text-white border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500 focus:bg-gray-700 transition-colors"
                             autoComplete={isLogin ? "current-password" : "new-password"}
                           />
                           <button
                             type="button"
                             tabIndex={-1}
                             onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
                           >
-                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                           </button>
                         </div>
                         {errors.password && <p className="text-red-400 text-xs mt-1">{errors.password}</p>}
@@ -689,23 +718,24 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
                     {/* Confirm Password (only for signup) */}
                     {!isLogin && (
                       <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-1">Confirm Password</label>
                         <div className="relative">
-                          <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                          <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                           <input
                             type={showConfirmPassword ? "text" : "password"}
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
                             placeholder="Confirm password"
-                            className="w-full pl-10 pr-12 py-3 bg-gray-800 bg-opacity-50 text-white border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
+                            className="w-full pl-11 pr-12 py-3 bg-gray-800 text-white border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500 focus:bg-gray-700 transition-colors"
                             autoComplete="new-password"
                           />
                           <button
                             type="button"
                             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
                             tabIndex={-1}
                           >
-                            {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                           </button>
                         </div>
                         {errors.confirmPassword && <p className="text-red-400 text-xs mt-1">{errors.confirmPassword}</p>}
@@ -715,26 +745,30 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
                     {/* Submit Button */}
                     <button
                       type="submit"
-                      className="w-full bg-blue-600 hover:bg-blue-700 py-3 rounded-lg font-medium transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed"
+                      className="w-full bg-blue-600 hover:bg-blue-700 py-3 px-4 rounded-lg font-medium transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed flex items-center justify-center"
                       disabled={loading || isAutoSendingOtp}
                     >
-                      {loading
-                        ? "Please wait..."
-                        : isLogin
-                          ? (loginMethod === "password" ? "Login" : "Send OTP")
-                          : "Create Account"
-                      }
+                      {loading ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                          Please wait...
+                        </>
+                      ) : isLogin ? (
+                        loginMethod === "password" ? "Sign In" : "Send OTP"
+                      ) : (
+                        "Create Account"
+                      )}
                     </button>
                   </div>
 
                   {/* Additional Actions */}
-                  <div className="flex justify-between items-center mt-4 text-sm">
+                  <div className="flex justify-between items-center text-sm">
                     {/* Forgot password link (only for login with password) */}
                     {isLogin && loginMethod === "password" && (
                       <button
                         type="button"
                         onClick={() => setStep("forgotPassword")}
-                        className="text-red-400 hover:underline"
+                        className="text-red-400 hover:text-red-300 hover:underline transition-colors"
                       >
                         Forgot password?
                       </button>
@@ -745,7 +779,7 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
                       <button
                         type="button"
                         onClick={handleSendVerificationForExisting}
-                        className="text-yellow-400 hover:underline"
+                        className="text-yellow-400 hover:text-yellow-300 hover:underline transition-colors disabled:text-gray-500 disabled:cursor-not-allowed"
                         disabled={loading || isAutoSendingOtp}
                       >
                         {isAutoSendingOtp ? "Sending..." : "Verify email now"}
@@ -754,19 +788,20 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
                   </div>
 
                   {/* Or divider & Google */}
-                  <div className="mt-6">
+                  <div className="space-y-4">
                     <div className="relative">
                       <div className="absolute inset-0 flex items-center">
-                        <div className="w-full border-t border-gray-600"></div>
+                        <div className="w-full border-t border-gray-700"></div>
                       </div>
                       <div className="relative flex justify-center text-sm">
-                        <span className="bg-gray-900 px-2 text-gray-400">OR</span>
+                        <span className="bg-gray-900 px-4 text-gray-400">OR</span>
                       </div>
                     </div>
+
                     <button
                       type="button"
                       onClick={handleGoogleAuth}
-                      className="w-full mt-4 flex items-center justify-center gap-3 bg-opacity-10 hover:bg-opacity-20 border hover:bg-gray-800 border-gray-600 py-3 rounded-lg transition-colors"
+                      className="w-full flex items-center justify-center gap-3 bg-white text-gray-900 hover:bg-gray-100 border border-gray-300 py-3 px-4 rounded-lg font-medium transition-colors"
                     >
                       <svg className="w-5 h-5" viewBox="0 0 24 24">
                         <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -779,12 +814,12 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
                   </div>
 
                   {/* Toggle auth mode */}
-                  <p className="text-center text-sm mt-6 text-gray-300">
+                  <p className="text-center text-sm text-gray-400">
                     {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
                     <button
                       type="button"
                       onClick={toggleAuthMode}
-                      className="text-blue-400 hover:underline"
+                      className="text-blue-400 hover:text-blue-300 hover:underline font-medium transition-colors"
                     >
                       {isLogin ? "Sign up" : "Sign in"}
                     </button>
@@ -794,13 +829,18 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
 
               {/* OTP Verification */}
               {step === "verify" && (
-                <form onSubmit={handleVerifyOtp}>
-                  <div className="relative flex w-full mb-4 items-center justify-center gap-3">
-                    <h1 className="text-4xl font-bold">You're almost done</h1>
+                <form onSubmit={handleVerifyOtp} className="space-y-6">
+                  <div className="text-center">
+                    <h1 className="text-3xl font-bold mb-2">Verify Your Email</h1>
+                    <p className="text-gray-400 text-sm">You're almost done!</p>
                   </div>
-                  <p className="text-sm text-gray-400 mb-6 bg-[#333]/20 p-3 rounded-lg">
-                    Enter the One Time Password (OTP) sent to <span className="text-white font-semibold">{email}</span>
-                  </p>
+
+                  <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700">
+                    <p className="text-sm text-gray-300 text-center">
+                      Enter the verification code sent to<br />
+                      <span className="text-white font-semibold">{email}</span>
+                    </p>
+                  </div>
 
                   <div className="space-y-6">
                     <div className="flex justify-center gap-3">
@@ -812,40 +852,54 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
                           maxLength={1}
                           value={val}
                           onChange={(e) => handleOtpChange(i, e.target.value)}
-                          className="w-12 h-12 text-center text-xl bg-gray-800 bg-opacity-50 text-white border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Backspace' && !val && i > 0) {
+                              const prevField = document.querySelector(`input[name="otp-${i - 1}"]`);
+                              prevField?.focus();
+                            }
+                          }}
+                          className="w-12 h-12 text-center text-xl font-semibold bg-gray-800 text-white border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500 focus:bg-gray-700 transition-colors"
                           autoFocus={i === 0}
                         />
                       ))}
                     </div>
-                    {errors.otp && <p className="text-red-400 text-xs mt-1 text-center">{errors.otp}</p>}
+                    {errors.otp && <p className="text-red-400 text-xs text-center">{errors.otp}</p>}
 
                     <div className="flex gap-3">
                       <button
                         type="button"
                         onClick={handleBack}
-                        className="flex-1 bg-gray-700 hover:bg-gray-600 py-3 rounded-lg font-medium transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed"
+                        className="flex-1 bg-gray-700 hover:bg-gray-600 py-3 px-4 rounded-lg font-medium transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed"
                         disabled={loading}
                       >
                         Back
                       </button>
                       <button
                         type="submit"
-                        className="flex-1 bg-blue-600 hover:bg-blue-700 py-3 rounded-lg font-medium transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed"
+                        className="flex-1 bg-blue-600 hover:bg-blue-700 py-3 px-4 rounded-lg font-medium transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed flex items-center justify-center"
                         disabled={loading}
                       >
-                        {loading ? "Verifying..." : "Verify OTP"}
+                        {loading ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                            Verifying...
+                          </>
+                        ) : (
+                          "Verify Code"
+                        )}
                       </button>
                     </div>
                   </div>
 
-                  <div className="text-center mt-4">
+                  <div className="text-center">
+                    <p className="text-sm text-gray-400 mb-2">Didn't receive the code?</p>
                     <button
                       type="button"
-                      className="text-blue-400 text-sm hover:underline disabled:text-gray-500 disabled:cursor-not-allowed"
+                      className="text-blue-400 text-sm hover:text-blue-300 hover:underline font-medium transition-colors disabled:text-gray-500 disabled:cursor-not-allowed"
                       onClick={handleResendOtp}
                       disabled={loading}
                     >
-                      Resend OTP
+                      Resend Code
                     </button>
                   </div>
                 </form>
@@ -853,21 +907,24 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
 
               {/* Forgot Password */}
               {step === "forgotPassword" && (
-                <form onSubmit={handleForgotPassword}>
-                  <div className="relative flex w-full mb-6 items-center justify-center gap-3">
-                    <h1 className="text-4xl font-bold">Forgot Password</h1>
+                <form onSubmit={handleForgotPassword} className="space-y-6">
+                  <div className="text-center">
+                    <h1 className="text-3xl font-bold mb-2">Reset Password</h1>
+                    <p className="text-gray-400 text-sm">Enter your email to receive a reset code</p>
                   </div>
 
                   <div className="space-y-4">
                     <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Email Address</label>
                       <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                         <input
                           type="email"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           placeholder="Enter your registered email"
-                          className="w-full pl-10 pr-4 py-3 bg-gray-800 bg-opacity-50 text-white border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
+                          className="w-full pl-11 pr-4 py-3 bg-gray-800 text-white border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500 focus:bg-gray-700 transition-colors"
+                          autoComplete="email"
                         />
                       </div>
                       {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email}</p>}
@@ -877,16 +934,23 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
                       <button
                         type="button"
                         onClick={handleBack}
-                        className="flex-1 bg-gray-700 hover:bg-gray-600 py-3 rounded-lg font-medium transition-colors"
+                        className="flex-1 bg-gray-700 hover:bg-gray-600 py-3 px-4 rounded-lg font-medium transition-colors"
                       >
                         Back
                       </button>
                       <button
                         type="submit"
-                        className="flex-1 bg-blue-600 hover:bg-blue-700 py-3 rounded-lg font-medium transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed"
+                        className="flex-1 bg-blue-600 hover:bg-blue-700 py-3 px-4 rounded-lg font-medium transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed flex items-center justify-center"
                         disabled={loading}
                       >
-                        {loading ? "Sending OTP..." : "Send Reset OTP"}
+                        {loading ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                            Sending...
+                          </>
+                        ) : (
+                          "Send Reset Code"
+                        )}
                       </button>
                     </div>
                   </div>
@@ -895,17 +959,21 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
 
               {/* Reset Password */}
               {step === "resetPassword" && (
-                <form onSubmit={handleVerifyOtp}>
-                  <div className="relative flex w-full mb-4 items-center justify-center gap-3">
-                    <h1 className="text-4xl font-bold">Reset Password</h1>
+                <form onSubmit={handleVerifyOtp} className="space-y-6">
+                  <div className="text-center">
+                    <h1 className="text-3xl font-bold mb-2">Create New Password</h1>
+                    <p className="text-gray-400 text-sm">Enter the code and your new password</p>
                   </div>
 
                   <div className="space-y-4">
                     {/* OTP Input */}
                     <div>
-                      <p className="text-sm text-gray-400 mb-3 bg-[#333]/20 p-3 rounded-lg">
-                        Enter the OTP sent to <span className="text-white font-semibold">{email}</span>
-                      </p>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Verification Code</label>
+                      <div className="bg-gray-800/50 p-3 rounded-lg border border-gray-700 mb-4">
+                        <p className="text-xs text-gray-300 text-center">
+                          Code sent to <span className="text-white font-semibold">{email}</span>
+                        </p>
+                      </div>
                       <div className="flex justify-center gap-3 mb-4">
                         {otpValues.map((val, i) => (
                           <input
@@ -915,32 +983,40 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
                             maxLength={1}
                             value={val}
                             onChange={(e) => handleOtpChange(i, e.target.value)}
-                            className="w-12 h-12 text-center text-xl bg-gray-800 bg-opacity-50 text-white border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Backspace' && !val && i > 0) {
+                                const prevField = document.querySelector(`input[name="otp-${i - 1}"]`);
+                                prevField?.focus();
+                              }
+                            }}
+                            className="w-12 h-12 text-center text-xl font-semibold bg-gray-800 text-white border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500 focus:bg-gray-700 transition-colors"
                             autoFocus={i === 0}
                           />
                         ))}
                       </div>
-                      {errors.otp && <p className="text-red-400 text-xs mt-1 text-center">{errors.otp}</p>}
+                      {errors.otp && <p className="text-red-400 text-xs text-center">{errors.otp}</p>}
                     </div>
 
                     {/* New Password */}
                     <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">New Password</label>
                       <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                         <input
                           type={showNewPassword ? "text" : "password"}
                           value={newPassword}
                           onChange={(e) => setNewPassword(e.target.value)}
                           placeholder="Enter new password"
-                          className="w-full pl-10 pr-12 py-3 bg-gray-800 bg-opacity-50 text-white border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
+                          className="w-full pl-11 pr-12 py-3 bg-gray-800 text-white border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500 focus:bg-gray-700 transition-colors"
+                          autoComplete="new-password"
                         />
                         <button
                           type="button"
                           onClick={() => setShowNewPassword(!showNewPassword)}
-                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
                           tabIndex={-1}
                         >
-                          {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                         </button>
                       </div>
                       {errors.newPassword && <p className="text-red-400 text-xs mt-1">{errors.newPassword}</p>}
@@ -950,28 +1026,36 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
                       <button
                         type="button"
                         onClick={handleBack}
-                        className="flex-1 bg-gray-700 hover:bg-gray-600 py-3 rounded-lg font-medium transition-colors"
+                        className="flex-1 bg-gray-700 hover:bg-gray-600 py-3 px-4 rounded-lg font-medium transition-colors"
                       >
                         Back
                       </button>
                       <button
                         type="submit"
-                        className="flex-1 bg-blue-600 hover:bg-blue-700 py-3 rounded-lg font-medium transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed"
+                        className="flex-1 bg-blue-600 hover:bg-blue-700 py-3 px-4 rounded-lg font-medium transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed flex items-center justify-center"
                         disabled={loading}
                       >
-                        {loading ? "Resetting..." : "Reset Password"}
+                        {loading ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                            Resetting...
+                          </>
+                        ) : (
+                          "Reset Password"
+                        )}
                       </button>
                     </div>
                   </div>
 
-                  <div className="text-center mt-4">
+                  <div className="text-center">
+                    <p className="text-sm text-gray-400 mb-2">Didn't receive the code?</p>
                     <button
                       type="button"
-                      className="text-blue-400 text-sm hover:underline disabled:text-gray-500 disabled:cursor-not-allowed"
+                      className="text-blue-400 text-sm hover:text-blue-300 hover:underline font-medium transition-colors disabled:text-gray-500 disabled:cursor-not-allowed"
                       onClick={handleResendOtp}
                       disabled={loading}
                     >
-                      Resend OTP
+                      Resend Code
                     </button>
                   </div>
                 </form>
@@ -981,6 +1065,20 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
           </div>
         </div>
       </div>
-    </>
+
+      {/* Toast Container */}
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="dark"
+      />
+    </div>
   );
 }
