@@ -544,36 +544,37 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 ">
+      <div className="relative rounded-2xl shadow-2xl w-6/10 max-h-[90vh] h-[90vh] overflow-hidden flex ">
 
         {/* Close Button */}
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 z-20 bg-black/20 hover:bg-black/30 backdrop-blur-sm w-10 h-10 rounded-full text-white text-lg transition-colors flex items-center justify-center"
+          className="absolute top-4 right-4 z-20 hover:cursor-pointer bg-black/20 hover:bg-black/30 backdrop-blur-sm w-10 h-10 rounded-full text-white text-lg transition-colors flex items-center justify-center"
         >
           <X className="w-5 h-5" />
         </button>
 
-        {/* Carousel Side */}
-        <div className="hidden lg:flex w-1/2 relative overflow-hidden">
+        {/* Carousel  */}
+        <div className="hidden flex-1 lg:flex w-1/2 relative overflow-hidden bg-gray-900">
           <div
-            className="flex transition-transform duration-1000 ease-in-out h-full"
+            className="flex transition-transform duration-1000 ease-in-out h-full w-full"
             style={{ transform: `translateX(-${index * 100}%)` }}
           >
             {slides.map((slide, i) => (
               <div key={i} className="relative flex-shrink-0 w-full h-full">
-                <img
-                  src={slide.url}
-                  alt={`Slide ${i + 1}`}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/20 to-transparent flex flex-col justify-end p-8 text-white">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/20 to-transparent flex flex-col justify-end p-8 w-full text-white">
                   <h2 className="text-3xl font-bold mb-2">{slide.title}</h2>
                   <h4 className="text-xl mb-2 opacity-90">{slide.subtitle}</h4>
                   <p className="text-base opacity-80 max-w-md leading-relaxed">{slide.description}</p>
                 </div>
+                <img
+                  src={slide.url}
+                  alt={`Slide ${i + 1}`}
+                  className="h-full w-fit object-cover"
+                />
+
               </div>
             ))}
           </div>
@@ -592,7 +593,7 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
         </div>
 
         {/* Form Side */}
-        <div className="flex-1 lg:max-w-md bg-gray-900 text-white overflow-y-auto">
+        <div className="flex-1 lg:max-w-md bg-gray-900 text-white overflow-y-auto w-1/2">
           <div className="p-6 lg:p-8 h-full flex flex-col justify-center min-h-[600px]">
 
             {/* Loading indicator for auto-sending OTP */}
