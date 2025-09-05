@@ -152,15 +152,13 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
       if (response.data.success) {
         // Check if user is verified
         if (response.data.user && !response.data.user.isVerified) {
-          toast.info("Please verify your email first. We're sending you a verification code...");
+          toast.info("Your email is not verified. Please try OTP Login to verify your email");
           setNeedsVerification(true);
-          setVerifyType("signup");
-
-          // Automatically send verification OTP
-          await handleAutoSendVerificationOtp();
+          setVerifyType("signup"); // Use "signup" type for account verification
           return;
         }
 
+        // If user is verified, complete login
         const token = response.data.token || response.data.access_token;
         if (token) {
           localStorage.setItem("token", token);
@@ -180,7 +178,10 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
       const errorMessage = err.response?.data?.message || err.message || "Login failed. Please try again.";
 
       // Check if error is due to unverified account
-      if (errorMessage.toLowerCase().includes("verify") || errorMessage.toLowerCase().includes("verification") || errorMessage.toLowerCase().includes("not verified")) {
+      if (errorMessage.toLowerCase().includes("verify") ||
+        errorMessage.toLowerCase().includes("verification") ||
+        errorMessage.toLowerCase().includes("not verified")) {
+
         toast.info("Please verify your email first. We're sending you a verification code...");
         setNeedsVerification(true);
         setVerifyType("signup");
@@ -196,6 +197,7 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
       setLoading(false);
     }
   }
+
 
   // Auto send verification OTP when email needs verification
   async function handleAutoSendVerificationOtp() {
@@ -357,14 +359,46 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
             onClose();
           }, 1500);
         } else if (verifyType === "signup") {
-          // Show success message and redirect to login
-          toast.success("Email verified successfully! You can now login.");
-          setTimeout(() => {
-            setStep("auth");
-            setIsLogin(true);
-            setNeedsVerification(false);
-            resetFormExceptEmail(); // Keep email for convenience
-          }, 2000);
+          // After verification, check if this was a login attempt that required verification
+          if (needsVerification) {
+            // If it was a login attempt, automatically log them in after verification
+            toast.success("Email verified successfully! Logging you in...");
+            try {
+              const loginResponse = await api.post("/api/auth/login", {
+                email,
+                password
+              });
+
+              if (loginResponse.data.success) {
+                const token = loginResponse.data.token || loginResponse.data.access_token;
+                if (token) {
+                  localStorage.setItem("token", token);
+                }
+
+                setTimeout(() => {
+                  onSuccess(loginResponse.data);
+                  onClose();
+                }, 1500);
+              }
+            } catch (loginErr) {
+              // If auto-login fails, redirect to login form
+              setTimeout(() => {
+                setStep("auth");
+                setIsLogin(true);
+                setNeedsVerification(false);
+                resetFormExceptEmail();
+              }, 2000);
+            }
+          } else {
+            // Regular signup verification - redirect to login
+            toast.success("Email verified successfully! You can now login.");
+            setTimeout(() => {
+              setStep("auth");
+              setIsLogin(true);
+              setNeedsVerification(false);
+              resetFormExceptEmail();
+            }, 2000);
+          }
         } else if (verifyType === "reset") {
           // Redirect to login
           setTimeout(() => {
@@ -763,7 +797,7 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
                   </div>
 
                   {/* Additional Actions */}
-                  <div className="flex justify-between items-center text-sm">
+                  <div className="flex justify-end items-center text-sm">
                     {/* Forgot password link (only for login with password) */}
                     {isLogin && loginMethod === "password" && (
                       <button
@@ -783,7 +817,7 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
                         className="text-yellow-400 hover:text-yellow-300 hover:underline transition-colors disabled:text-gray-500 disabled:cursor-not-allowed"
                         disabled={loading || isAutoSendingOtp}
                       >
-                        {isAutoSendingOtp ? "Sending..." : "Verify email now"}
+                        {/* {isAutoSendingOtp ? "Sending..." : "Verify email now"} */}
                       </button>
                     )}
                   </div>
@@ -965,6 +999,7 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
                     <h1 className="text-3xl font-bold mb-2">Create New Password</h1>
                     <p className="text-gray-400 text-sm">Enter the code and your new password</p>
                   </div>
+
 
                   <div className="space-y-4">
                     {/* OTP Input */}
