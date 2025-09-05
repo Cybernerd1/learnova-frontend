@@ -4,6 +4,9 @@ import api from "../../services/api.js";
 import { User, Mail, Lock, Eye, EyeOff, X } from "lucide-react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { useNavigate } from "react-router-dom";
+
+
 
 const slides = [
   { url: assets.auth1, title: "Connect & Collaborate", subtitle: "Join thousands of learners in our classrooms", description: "Experience seamless real-time collaboration with peers and instructors." },
@@ -30,6 +33,8 @@ const passwordSchema = {
 };
 
 export default function AuthModal({ isOpen = true, onClose = () => { }, onSuccess = () => { } }) {
+  const navigate = useNavigate();
+  
   const [index, setIndex] = useState(0);
   const timeoutRef = useRef(null);
   const delay = 4000;
@@ -169,6 +174,7 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
         setTimeout(() => {
           onSuccess(response.data);
           onClose();
+          navigate("/dashboard");
         }, 1500);
       } else {
         toast.error(response.data.message || "Login failed");
