@@ -1,9 +1,12 @@
-import React from 'react'
+import React,{useState} from 'react'
 import { assets } from '../../assets/assets.js'
+import AuthModal from '../auth/AuthModal';
 
 const LearnOvaHero = () => {
+    const [isModalOpen, setIsModalOpen] = useState(false);
     return (
         <>
+
             <div className='bg-[#F5F1F1] flex flex-row items-center justify-center w-full min-h-screen h-full gap-5 px-52 py-32'>
                 <div className='flex flex-col max-w-150 max-h-full gap-2 items-left justify-start px-12'>
                     <h2 className='text-5xl font-extrabold text-[#333] '>Empower Learning.</h2>
@@ -18,6 +21,7 @@ const LearnOvaHero = () => {
                 </div>
                 <img src={assets.hero1} alt="Hero Image" className='w-150 min-h-fit h-full max-h-full object-cover' />
             </div>
+            <AuthModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
         </>
     )
 }

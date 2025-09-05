@@ -545,7 +545,7 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 ">
-      <div className="relative rounded-2xl shadow-2xl w-6/10 max-h-[90vh] h-[90vh] overflow-hidden flex ">
+      <div className="relative rounded-2xl shadow-2xl w-6/10 max-h-[100vh] h-auto overflow-hidden flex ">
 
         {/* Close Button */}
         <button
@@ -563,11 +563,11 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
             style={{ transform: `translateX(-${index * 100}%)` }}
           >
             {slides.map((slide, i) => (
-              <div key={i} className="relative flex-shrink-0 w-full h-full">
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/20 to-transparent flex flex-col justify-end p-8 w-full text-white">
-                  <h2 className="text-3xl font-bold mb-2">{slide.title}</h2>
-                  <h4 className="text-xl mb-2 opacity-90">{slide.subtitle}</h4>
-                  <p className="text-base opacity-80 max-w-md leading-relaxed">{slide.description}</p>
+              <div key={i} className="relative flex-shrink-0 w-full h-full ">
+                <div className="absolute inset-0  flex flex-col top-1 justify-start p-4 w-full text-black">
+                  <h2 className="text-2xl font-bold mb-2">{slide.title}</h2>
+                  <h4 className="text-xl mb-2 opacity-85">{slide.subtitle}</h4>
+                  <p className="text-0.25xl opacity-60  max-w-md leading-relaxed">{slide.description}</p>
                 </div>
                 <img
                   src={slide.url}
@@ -593,7 +593,7 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
         </div>
 
         {/* Form Side */}
-        <div className="flex-1 lg:max-w-md bg-gray-900 text-white overflow-y-auto w-1/2">
+        <div className="flex-1 lg:max-w-md bg-gray-900 text-white scrollbar-hide overflow-y-auto w-1/2 py-6">
           <div className="p-6 lg:p-8 h-full flex flex-col justify-center min-h-[600px]">
 
             {/* Loading indicator for auto-sending OTP */}
@@ -617,7 +617,7 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
 
               {/* LOGIN/SIGNUP */}
               {step === "auth" && (
-                <form onSubmit={handleAuth} autoComplete="off" className="space-y-6">
+                <form onSubmit={handleAuth} autoComplete="off" className="space-y-2 ">
                   <div className="text-center">
                     <h1 className="text-3xl lg:text-4xl font-bold mb-2">
                       {isLogin ? "Welcome Back" : "Get Started"}
