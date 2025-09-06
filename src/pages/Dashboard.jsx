@@ -1,8 +1,12 @@
 import React from 'react'
-
+import {Sidenav} from '../components/shared/Sidenav'
 const Dashboard = () => {
   return (
-    <div>Dashboard</div>
+    <>
+      {/* <Sidenav /> */}
+     <div>Dashboard</div>
+    </>
+   
   )
 }
 

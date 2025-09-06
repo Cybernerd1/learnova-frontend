@@ -5,6 +5,7 @@ import auth2 from './auth2.svg';
 import auth3 from './auth3.svg';
 import GetStartedArrow from './GetStartedArrow.svg';
 import startlearningbutton from './startlearningbutton.svg';
+
 export const assets = {
     hero1,
     learnovalogo,

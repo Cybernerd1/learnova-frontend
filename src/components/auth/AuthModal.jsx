@@ -174,7 +174,7 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
         setTimeout(() => {
           onSuccess(response.data);
           onClose();
-          navigate("/dashboard");
+          navigate("/");
         }, 1500);
       } else {
         toast.error(response.data.message || "Login failed");
@@ -308,6 +308,7 @@ export default function AuthModal({ isOpen = true, onClose = () => { }, onSucces
     try {
       const baseUrl = import.meta.env.VITE_API_BASE_URL || window.location.origin;
       window.location.href = `${baseUrl}/api/auth/google`;
+      
     } catch (error) {
       console.error("Google Auth Error:", error);
       toast.error("Google authentication is not implemented yet.");

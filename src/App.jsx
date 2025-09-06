@@ -2,6 +2,8 @@ import React from "react";
 import { Route, Routes } from "react-router-dom";
 import ProtectedRoute from "./lib/ProtectedRoute";
 
+import {AuthSuccess} from "./components/auth/AuthSuccess";
+
 import Homepage from "./pages/Homepage";
 import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
@@ -9,7 +11,7 @@ import Classroom from "./pages/Classroom";
 import Community from "./pages/Community";
 import Messages from "./pages/Messages";
 import Notifications from "./pages/Notifications";
-
+import Layout from "./pages/Layout";
 
 
 function App() {
@@ -19,12 +21,16 @@ function App() {
     <>
 
       <Routes>
-        <Route path="/" element={(token) ? (<ProtectedRoute><Dashboard /></ProtectedRoute>) : (<Homepage />)} />
-        <Route path="/Classroom" element={<ProtectedRoute><Classroom /></ProtectedRoute>} />
-        <Route path="/Community" element={<ProtectedRoute><Community /></ProtectedRoute>} />
-        <Route path="/Messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
-        <Route path="/Notification" element={<ProtectedRoute><Notification /></ProtectedRoute>} />
-        <Route path="/Settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+        <Route path="/" element={(token) ? (<ProtectedRoute><Layout><Dashboard /></Layout> </ProtectedRoute>) : (<Homepage />)} />
+        
+        <Route path="/auth/success" element={<AuthSuccess />} />
+        <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+        <Route path="/classroom" element={<Classroom />} />
+        <Route path="/community" element={<Community />} />
+        <Route path="/messages" element={<Messages />} />
+        <Route path="/notification" element={<Notifications />} />
+        <Route path="/settings" element={<Settings />} />
+        </Route>
       </Routes>
 
     </>
