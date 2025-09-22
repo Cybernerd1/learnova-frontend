@@ -1,11 +1,11 @@
 import React from 'react'
-import {Sidenav} from '../components/shared/Sidenav'
+
 const Dashboard = () => {
   return (
-    <>
-      {/* <Sidenav /> */}
-     <div>Dashboard</div>
-    </>
+  
+
+     <div className='flex-1 bg-gray-50'> Dashboard</div>
+    
    
   )
 }
